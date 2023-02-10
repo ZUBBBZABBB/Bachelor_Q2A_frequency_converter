@@ -1,1 +1,72 @@
 
+2.1 Communications.py
+1 """ DOCS: https://abb-robot-machine-vision.readthedocs.io/en/latest/
+2 https://developercenter.robotstudio.com/api/rwsApi/"""
+3
+4 import time
+5 import json
+6 from rwsuis import RWS
+7 import requests
+8 from requests.auth import HTTPDigestAuth
+9
+1
+10 # Constants
+11 NORBERT_ADDRESS = "http://152.94.0.38"
+12 RUDOLF_ADDRESS = "http://152.94.0.39"
+13
+14
+15 def test_get_request(robot_ip: str) -> bool:
+16 """Makes attempt to poll controller state, returns true or false
+depending on success"""
+17 # Username and password for robots
+18 auth = HTTPDigestAuth("Default User", "robotics")
+19 # Returns xml unless specified
+20 r = requests.get(f"{robot_ip}/rw/panel/ctrlstate?json=1", auth=auth)
+21 # Test out json lib
+22 json_response = r.json()
+23 pretty_response = json.dumps(json_response, indent=4)
+24 if r.status_code >= 200 and r.status_code < 300:
+25 print(f"Success: {r.status_code}")
+26 print(pretty_response)
+27 return True
+28 else:
+29 print(f"Unsuccessfull: {r.status_code}")
+30 print(pretty_response)
+31 return False
+32
+33
+34 def request_mastership(robot_ip: str, manual: bool = False) -> RWS.RWS:
+35 """Tries to request mastership of robot"""
+36 robot = RWS.RWS(robot_ip)
+37 if manual:
+38 robot.request_rmmp() # Mastership request in manual mode
+39 time.sleep(3) # Give time to accept manual request
+40 else:
+41 robot.request_mastership() # Mastership request in automatic mode
+42 return robot
+43
+44
+45 def test_post_request(robot_ip: str, variable_name: str, new_robtarget:
+list[int]) -> None:
+46 robot = request_mastership(robot_ip, True)
+47 robot.set_robtarget_translation(variable_name, new_robtarget)
+48
+49
+50 if __name__ == "__main__":
+51 # test_get_request(NORBERT_ADDRESS)
+52 #test_post_request(NORBERT_ADDRESS, "simple_robtarget", [0, 0, 400])
+53 norbert = RWS.RWS(NORBERT_ADDRESS) # Norbert’s IP address
+54 norbert.request_mastership()
+55 norbert.motors_on()
+56 norbert.start_RAPID() # NB! Starts RAPID execution from main
+57 norbert.set_robtarget_translation("simple_robtarget", [0,0,400])
+2
+58
+59 # # Create session
+60 # robot = RWS.RWS(NORBERT_ADDRESS)
+61
+62 # # Get variables
+63 # robot.get_rapid_variable("variablename")
+64
+65 # # Execute commands:
+66 # robot.set_rapid_variable("variablename", 1)
